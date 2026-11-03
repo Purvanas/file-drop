@@ -1,0 +1,1158 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Envoyer un gros fichier gratuitement — FileDrop, alternative WeTransfer sans compte</title>
+  <meta name="description" content="Envoyez des fichiers jusqu a 500 MB gratuitement, sans compte. Alternative a WeTransfer sans inscription. Lien temporaire, mot de passe gratuit, expiration automatique. Aussi pour partager du texte et du code.">
+  <meta name="keywords" content="partage fichier gratuit, envoi fichier temporaire, transfert fichier en ligne, wetransfer alternative gratuit, partage texte en ligne">
+  <meta property="og:title" content="FileDrop — Partage de fichiers temporaire gratuit">
+  <meta property="og:description" content="Partagez fichiers et textes avec un lien temporaire. Gratuit, sans inscription.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://drop.purvanas.fr">
+  <link rel="canonical" href="https://drop.purvanas.fr">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      background: #0a0a0a;
+      color: #e0e0e0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 480px;
+      padding: 2rem;
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      font-weight: 300;
+      text-align: center;
+      margin-bottom: .3rem;
+      letter-spacing: -0.02em;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #666;
+      font-size: .85rem;
+      margin-bottom: 2rem;
+    }
+
+    /* ===== MODE TOGGLE ===== */
+    .mode-toggle {
+      display: flex;
+      background: #141414;
+      border-radius: 10px;
+      padding: 3px;
+      margin-bottom: 1.5rem;
+      border: 1px solid #2a2a2a;
+    }
+    .mode-btn {
+      flex: 1;
+      padding: .55rem;
+      border: none;
+      border-radius: 8px;
+      background: transparent;
+      color: #888;
+      font-size: .85rem;
+      cursor: pointer;
+      transition: all .2s;
+      font-weight: 500;
+    }
+    .mode-btn.active {
+      background: #2a2a2a;
+      color: #fff;
+    }
+
+    /* ===== PASTE AREA ===== */
+    .paste-area {
+      width: 100%;
+      min-height: 200px;
+      max-height: 400px;
+      background: #141414;
+      border: 1px solid #2a2a2a;
+      color: #e0e0e0;
+      padding: .8rem;
+      border-radius: 10px;
+      font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+      font-size: .82rem;
+      line-height: 1.5;
+      resize: vertical;
+      outline: none;
+      transition: border-color .2s;
+      margin-bottom: .3rem;
+      tab-size: 2;
+    }
+    .paste-area:focus { border-color: #6ea8fe; }
+    .paste-area::placeholder { color: #444; }
+    .paste-counter {
+      text-align: right;
+      font-size: .7rem;
+      color: #555;
+      margin-bottom: 1.5rem;
+    }
+    .paste-counter.over { color: #ef5350; }
+
+    /* ===== PASTE VIEW ===== */
+    .paste-view {
+      display: none;
+      text-align: center;
+    }
+    .paste-view.visible { display: block; }
+    .paste-content-wrap {
+      background: #141414;
+      border: 1px solid #2a2a2a;
+      border-radius: 10px;
+      padding: 1rem;
+      margin: 1rem 0;
+      max-height: 500px;
+      overflow: auto;
+      text-align: left;
+    }
+    .paste-content {
+      font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+      font-size: .82rem;
+      line-height: 1.6;
+      color: #e0e0e0;
+      white-space: pre-wrap;
+      word-break: break-word;
+      tab-size: 2;
+    }
+
+    /* ===== DROP ZONE ===== */
+    .dropzone {
+      border: 2px dashed #333;
+      border-radius: 12px;
+      padding: 3rem 1.5rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all .2s;
+      margin-bottom: 1.5rem;
+    }
+    .dropzone:hover, .dropzone.dragover {
+      border-color: #6ea8fe;
+      background: rgba(110,168,254,.05);
+    }
+    .dropzone-icon { font-size: 2.5rem; margin-bottom: .5rem; }
+    .dropzone-text { color: #888; font-size: .9rem; }
+    .dropzone-text span { color: #6ea8fe; text-decoration: underline; cursor: pointer; }
+    .dropzone.has-file { border-color: #4caf50; background: rgba(76,175,80,.05); }
+    .dropzone.has-file .dropzone-icon::after { content: ''; }
+
+    .file-info {
+      display: none;
+      padding: .8rem 1rem;
+      background: #141414;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+      font-size: .85rem;
+    }
+    .file-info.visible { display: flex; justify-content: space-between; align-items: center; }
+    .file-info .name { color: #fff; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 280px; }
+    .file-info .size { color: #888; white-space: nowrap; margin-left: 1rem; }
+
+    /* ===== OPTIONS ===== */
+    .options { margin-bottom: 1.5rem; }
+
+    .option-row {
+      display: flex;
+      align-items: center;
+      gap: .8rem;
+      margin-bottom: .8rem;
+    }
+
+    label {
+      font-size: .85rem;
+      color: #999;
+      min-width: 70px;
+    }
+
+    select, input[type="password"], input[type="text"] {
+      flex: 1;
+      background: #141414;
+      border: 1px solid #2a2a2a;
+      color: #e0e0e0;
+      padding: .55rem .8rem;
+      border-radius: 8px;
+      font-size: .85rem;
+      outline: none;
+      transition: border-color .2s;
+    }
+    select:focus, input:focus {
+      border-color: #6ea8fe;
+    }
+
+    /* ===== BUTTON ===== */
+    .btn {
+      width: 100%;
+      padding: .8rem;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all .2s;
+    }
+    .btn-primary {
+      background: #fff;
+      color: #0a0a0a;
+    }
+    .btn-primary:hover { background: #e0e0e0; }
+    .btn-primary:disabled {
+      background: #333;
+      color: #666;
+      cursor: not-allowed;
+    }
+
+    /* ===== PROGRESS ===== */
+    .progress-wrap {
+      display: none;
+      margin-bottom: 1rem;
+    }
+    .progress-wrap.visible { display: block; }
+    .progress-bar {
+      height: 4px;
+      background: #1a1a1a;
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: #6ea8fe;
+      width: 0%;
+      transition: width .3s;
+    }
+    .progress-text {
+      font-size: .75rem;
+      color: #888;
+      text-align: center;
+      margin-top: .4rem;
+    }
+
+    /* ===== RESULT ===== */
+    .result {
+      display: none;
+      text-align: center;
+      padding: 1.5rem;
+      background: #111;
+      border-radius: 12px;
+      border: 1px solid #222;
+    }
+    .result.visible { display: block; }
+    .result h2 {
+      font-size: 1.2rem;
+      font-weight: 400;
+      margin-bottom: 1rem;
+      color: #4caf50;
+    }
+    .link-box {
+      display: flex;
+      gap: .5rem;
+      margin-bottom: 1rem;
+    }
+    .link-box input {
+      flex: 1;
+      background: #1a1a1a;
+      border: 1px solid #333;
+      color: #fff;
+      padding: .6rem .8rem;
+      border-radius: 8px;
+      font-size: .85rem;
+      outline: none;
+    }
+    .btn-copy {
+      background: #6ea8fe;
+      color: #0a0a0a;
+      border: none;
+      padding: .6rem 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 500;
+      font-size: .85rem;
+      white-space: nowrap;
+      transition: background .2s;
+    }
+    .btn-copy:hover { background: #5a94e8; }
+    .result-meta {
+      font-size: .8rem;
+      color: #888;
+      line-height: 1.6;
+    }
+    .result-meta strong { color: #ccc; }
+    .new-upload {
+      margin-top: 1rem;
+      color: #6ea8fe;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: .85rem;
+      text-decoration: underline;
+    }
+
+    .privacy-footer {
+      text-align: center;
+      margin-top: 2.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid #1a1a1a;
+      font-size: .7rem;
+      color: #444;
+      line-height: 1.6;
+    }
+
+    /* ===== DOWNLOAD PAGE ===== */
+    .download-page {
+      display: none;
+      text-align: center;
+    }
+    .download-page.visible { display: block; }
+    .download-page h2 {
+      font-size: 1.3rem;
+      font-weight: 300;
+      margin-bottom: 1.5rem;
+    }
+    .dl-file-name {
+      font-size: 1.1rem;
+      color: #fff;
+      font-weight: 500;
+      margin-bottom: .3rem;
+    }
+    .dl-file-size {
+      color: #888;
+      font-size: .85rem;
+      margin-bottom: .3rem;
+    }
+    .dl-expires {
+      color: #666;
+      font-size: .8rem;
+      margin-bottom: 1.5rem;
+    }
+    .dl-password {
+      margin-bottom: 1rem;
+    }
+    .dl-password input {
+      width: 100%;
+      max-width: 280px;
+    }
+    .dl-error {
+      color: #ef5350;
+      font-size: .85rem;
+      margin-top: .5rem;
+      display: none;
+    }
+    .btn-download {
+      background: #4caf50;
+      color: #fff;
+      padding: .8rem 2rem;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      cursor: pointer;
+      font-weight: 500;
+      transition: background .2s;
+    }
+    .btn-download:hover { background: #43a047; }
+    .btn-download.loading {
+      background: #388e3c;
+      pointer-events: none;
+      position: relative;
+    }
+    .btn-download.loading::after {
+      content: '';
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      margin-left: 8px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: dl-spin .6s linear infinite;
+      vertical-align: middle;
+    }
+    @keyframes dl-spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .btn-report {
+      background: none;
+      border: none;
+      color: #666;
+      font-size: .75rem;
+      cursor: pointer;
+      margin-top: 1.2rem;
+      text-decoration: underline;
+      transition: color .2s;
+    }
+    .btn-report:hover { color: #ef5350; }
+
+    .report-form {
+      display: none;
+      margin-top: 1rem;
+      text-align: center;
+    }
+    .report-form.visible { display: block; }
+    .report-form select {
+      width: 100%;
+      max-width: 280px;
+      background: #141414;
+      border: 1px solid #2a2a2a;
+      color: #e0e0e0;
+      padding: .5rem .8rem;
+      border-radius: 8px;
+      font-size: .85rem;
+      margin-bottom: .8rem;
+    }
+    .btn-report-confirm {
+      background: #ef5350;
+      color: #fff;
+      border: none;
+      padding: .5rem 1.2rem;
+      border-radius: 8px;
+      font-size: .85rem;
+      cursor: pointer;
+      font-weight: 500;
+    }
+    .report-success {
+      color: #4caf50;
+      font-size: .85rem;
+      margin-top: .8rem;
+      display: none;
+    }
+
+    .legal-link {
+      text-align: center;
+      margin-top: 2rem;
+      font-size: .65rem;
+      color: #333;
+    }
+    .legal-link a { color: #444; text-decoration: none; }
+    .legal-link a:hover { color: #666; text-decoration: underline; }
+
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.8);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.visible { display: flex; }
+    .modal {
+      background: #141414;
+      border: 1px solid #2a2a2a;
+      border-radius: 12px;
+      padding: 2rem;
+      max-width: 520px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+      color: #ccc;
+      font-size: .82rem;
+      line-height: 1.7;
+    }
+    .modal h2 { color: #fff; font-size: 1.1rem; font-weight: 400; margin-bottom: 1rem; }
+    .modal h3 { color: #aaa; font-size: .85rem; font-weight: 600; margin: 1rem 0 .4rem; }
+    .modal p { margin-bottom: .6rem; }
+    .modal-close {
+      background: none;
+      border: 1px solid #333;
+      color: #999;
+      padding: .4rem 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 1rem;
+      font-size: .8rem;
+    }
+  </style>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"FileDrop","url":"https://drop.purvanas.fr","description":"Partage de fichiers et textes temporaire gratuit","applicationCategory":"UtilitiesApplication","operatingSystem":"All","offers":{"@type":"Offer","price":"0","priceCurrency":"EUR"}}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Quelle est la taille maximale des fichiers sur FileDrop ?","acceptedAnswer":{"@type":"Answer","text":"500 MB par fichier sur cette instance. Le transfert se fait par morceaux de 5 MB."}},{"@type":"Question","name":"Combien de temps les fichiers sont-ils conserves ?","acceptedAnswer":{"@type":"Answer","text":"La duree choisie va de 15 minutes a 24 heures. Les fichiers sont supprimes apres expiration."}},{"@type":"Question","name":"Le destinataire doit-il creer un compte ?","acceptedAnswer":{"@type":"Answer","text":"Non. Le partage fonctionne par lien, avec un mot de passe optionnel."}}]}</script>
+</head>
+<body>
+  <div class="container">
+    <!-- UPLOAD VIEW -->
+    <div id="upload-view">
+      <h1>FileDrop</h1>
+      <p class="subtitle">Partage temporaire de fichiers & texte</p>
+
+      <!-- MODE TOGGLE -->
+      <div class="mode-toggle" id="mode-toggle">
+        <button class="mode-btn active" data-mode="file">Fichier</button>
+        <button class="mode-btn" data-mode="paste">Texte</button>
+      </div>
+
+      <!-- FILE MODE -->
+      <div id="file-mode">
+        <div class="dropzone" id="dropzone">
+          <div class="dropzone-icon">+</div>
+          <div class="dropzone-text"><span>Choisir un fichier</span> ou glisser-deposer</div>
+        </div>
+        <input type="file" id="file-input" hidden>
+
+        <div class="file-info" id="file-info">
+          <span class="name" id="file-name"></span>
+          <span class="size" id="file-size"></span>
+        </div>
+      </div>
+
+      <!-- PASTE MODE -->
+      <div id="paste-mode" style="display:none">
+        <textarea class="paste-area" id="paste-area" placeholder="Collez votre texte ou code ici..."></textarea>
+        <div class="paste-counter"><span id="paste-count">0</span> / 500 KB</div>
+      </div>
+
+      <div class="options">
+        <div class="option-row">
+          <label for="ttl">Durée</label>
+          <select id="ttl">
+            <option value="15">15 minutes</option>
+            <option value="30">30 minutes</option>
+            <option value="60" selected>1 heure</option>
+            <option value="180">3 heures</option>
+            <option value="360">6 heures</option>
+            <option value="720">12 heures</option>
+            <option value="1440">24 heures</option>
+          </select>
+        </div>
+        <div class="option-row">
+          <label for="password">Mot de passe</label>
+          <input type="password" id="password" placeholder="Optionnel">
+        </div>
+      </div>
+
+      <div class="progress-wrap" id="progress-wrap">
+        <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+        <div class="progress-text" id="progress-text">Upload en cours...</div>
+      </div>
+
+      <button class="btn btn-primary" id="upload-btn" disabled>Envoyer</button>
+    </div>
+
+    <!-- RESULT VIEW -->
+    <div class="result" id="result-view">
+      <h2>Fichier en ligne</h2>
+      <div class="link-box">
+        <input type="text" id="result-link" readonly>
+        <button class="btn-copy" id="copy-btn">Copier</button>
+      </div>
+      <div class="result-meta">
+        <div><strong id="result-name"></strong></div>
+        <div id="result-size"></div>
+        <div id="result-expires"></div>
+        <div id="result-password"></div>
+      </div>
+      <button class="new-upload" id="new-upload">Envoyer un autre fichier</button>
+    </div>
+
+    <div class="privacy-footer" id="privacy-footer">
+      Aucun compte &middot; Pas de cookies &middot; Fichiers auto-supprimes apres expiration
+      <br><a href="#" onclick="showLegal();return false;" style="color:#555;text-decoration:none;">Mentions legales</a>
+    </div>
+
+    <!-- PASTE VIEW -->
+    <div class="paste-view" id="paste-view">
+      <h1>FileDrop</h1>
+      <p class="subtitle" style="margin-bottom:.5rem">Texte partage</p>
+      <div class="dl-file-size" id="pv-size"></div>
+      <div class="dl-expires" id="pv-expires"></div>
+      <div class="dl-password" id="pv-password-wrap" style="display:none">
+        <input type="password" id="pv-password" placeholder="Mot de passe requis">
+        <button class="btn-download" style="margin-top:.5rem;padding:.5rem 1.5rem;font-size:.85rem" id="pv-unlock">Deverrouiller</button>
+        <div class="dl-error" id="pv-error">Mot de passe incorrect</div>
+      </div>
+      <div class="paste-content-wrap" id="pv-content-wrap" style="display:none">
+        <pre class="paste-content" id="pv-content"></pre>
+      </div>
+      <div style="display:flex;gap:.5rem;justify-content:center;margin-top:1rem" id="pv-actions" style="display:none">
+        <button class="btn-copy" id="pv-copy">Copier</button>
+        <button class="btn-copy" id="pv-raw" style="background:#333;color:#ccc">Brut (.txt)</button>
+      </div>
+      <br>
+      <button class="btn-report" onclick="showReportForm()">Signaler ce contenu</button>
+      <div class="report-form" id="paste-report-form">
+        <select id="paste-report-reason">
+          <option value="Contenu illegal">Contenu illegal</option>
+          <option value="Atteinte aux droits d'auteur">Atteinte aux droits d'auteur</option>
+          <option value="Contenu haineux ou violent">Contenu haineux ou violent</option>
+          <option value="Autre">Autre</option>
+        </select>
+        <br>
+        <button class="btn-report-confirm" onclick="submitPasteReport()">Confirmer le signalement</button>
+      </div>
+      <div class="legal-link"><a href="#" onclick="showLegal();return false;">Mentions legales</a></div>
+    </div>
+
+    <!-- DOWNLOAD VIEW -->
+    <div class="download-page" id="download-view">
+      <h1>FileDrop</h1>
+      <p class="subtitle" style="margin-bottom:1.5rem">Fichier partagé</p>
+      <div class="dl-file-name" id="dl-name"></div>
+      <div class="dl-file-size" id="dl-size"></div>
+      <div class="dl-expires" id="dl-expires"></div>
+      <div class="dl-password" id="dl-password-wrap" style="display:none">
+        <input type="password" id="dl-password" placeholder="Mot de passe requis">
+        <div class="dl-error" id="dl-error">Mot de passe incorrect</div>
+      </div>
+      <button class="btn-download" id="dl-btn">Télécharger</button>
+      <br>
+      <button class="btn-report" id="report-btn" onclick="showReportForm()">Signaler ce fichier</button>
+      <div class="report-form" id="report-form">
+        <select id="report-reason">
+          <option value="Contenu illegal">Contenu illegal</option>
+          <option value="Atteinte aux droits d'auteur">Atteinte aux droits d'auteur</option>
+          <option value="Contenu haineux ou violent">Contenu haineux ou violent</option>
+          <option value="Autre">Autre</option>
+        </select>
+        <br>
+        <button class="btn-report-confirm" onclick="submitReport()">Confirmer le signalement</button>
+        <div class="report-success" id="report-success">Fichier supprime. Merci pour le signalement.</div>
+      </div>
+      <div class="legal-link"><a href="#" onclick="showLegal();return false;">Mentions legales</a></div>
+    </div>
+  </div>
+
+  <!-- LEGAL MODAL -->
+  <div class="modal-overlay" id="legal-modal" onclick="if(event.target===this)this.classList.remove('visible')">
+    <div class="modal">
+      <h2>Mentions legales & CGU</h2>
+      <h3>Editeur et hebergeur</h3>
+      <p>Ce service est edite et heberge par un particulier a titre personnel.<br>
+      Contact : <strong>contact@purvanas.fr</strong></p>
+      <h3>Description du service</h3>
+      <p>FileDrop permet le partage temporaire de fichiers. Les fichiers sont automatiquement supprimes apres la duree choisie par l'utilisateur (15 min a 24h). Aucun compte utilisateur n'est requis.</p>
+      <h3>Donnees personnelles</h3>
+      <p>Aucun cookie ni outil d'analyse tiers n'est utilise. Les adresses IP peuvent apparaitre dans les journaux techniques et les signalements afin d'exploiter et de moderer le service.</p>
+      <h3>Utilisation du service</h3>
+      <p>Les contenus sont stockes temporairement. L'utilisateur reste responsable des fichiers qu'il partage et doit disposer des droits necessaires.</p>
+      <h3>Contenus interdits</h3>
+      <p>Il est interdit d'utiliser ce service pour partager : des contenus a caractere pedopornographique, des contenus incitant a la haine ou a la violence, des contenus portant atteinte aux droits d'auteur, tout contenu contraire a la legislation francaise en vigueur.</p>
+      <h3>Signalement</h3>
+      <p>Chaque page de partage propose un bouton "Signaler". Un signalement declenche la suppression automatique du contenu lorsqu'il est encore present ; l'adresse de contact ci-dessus reste disponible en cas de difficulte.</p>
+      <button class="modal-close" onclick="document.getElementById('legal-modal').classList.remove('visible')">Fermer</button>
+    </div>
+  </div>
+
+  <!-- CROSS LINKS -->
+  <div style="display:flex;gap:.5rem;margin-top:1.2rem;flex-wrap:wrap;justify-content:center" id="cross-links">
+    <a href="https://dl.purvanas.fr" style="padding:.45rem .8rem;border:1px solid #2a2a2a;border-radius:8px;background:#141414;color:#888;font-size:.72rem;text-decoration:none"><span style="color:#7c4dff">&#8615;</span> Telecharger une video</a>
+    <a href="https://convert.purvanas.fr" style="padding:.45rem .8rem;border:1px solid #2a2a2a;border-radius:8px;background:#141414;color:#888;font-size:.72rem;text-decoration:none"><span style="color:#f59e0b">&#9881;</span> Convertir une image</a>
+    <a href="https://qr.purvanas.fr" style="padding:.45rem .8rem;border:1px solid #2a2a2a;border-radius:8px;background:#141414;color:#888;font-size:.72rem;text-decoration:none"><span style="color:#22c55e">&#9638;</span> Generateur QR Code</a>
+  </div>
+
+  <!-- SEO CONTENT -->
+  <div style="max-width:480px;margin:2rem auto 0;padding:0 1rem 2rem;border-top:1px solid #1e1e1e">
+    <h2 style="font-size:1.15rem;font-weight:600;color:#ccc;margin:1.5rem 0 .8rem">Envoyer un gros fichier gratuitement</h2>
+    <p style="font-size:.8rem;color:#555;line-height:1.7;margin-bottom:1rem">FileDrop va a l'essentiel : vous deposez un fichier, recevez un lien et le partagez. Aucun compte, cookie ou outil de mesure d'audience tiers. Le fichier est supprime automatiquement apres la duree choisie.</p>
+
+    <h3 style="font-size:.95rem;font-weight:600;color:#b0b0b0;margin:1.5rem 0 .6rem">Un partage temporaire, sans compte</h3>
+    <p style="font-size:.75rem;color:#444;line-height:1.6;margin-bottom:1rem">L'instance accepte des fichiers jusqu'a 500 MB, propose une protection par mot de passe et permet aussi de partager du texte. Les liens expirent entre 15 minutes et 24 heures.</p>
+
+    <h3 style="font-size:.95rem;font-weight:600;color:#b0b0b0;margin:1.5rem 0 .6rem">Comment envoyer un fichier trop lourd pour un email</h3>
+    <p style="font-size:.8rem;color:#555;line-height:1.7;margin-bottom:.5rem">Quand une piece jointe est refusee par la messagerie, partagez plutot un lien temporaire :</p>
+    <ol style="font-size:.8rem;color:#555;line-height:1.9;margin:0 0 1rem 1.2rem">
+      <li>Deposez votre fichier sur FileDrop (jusqu'a 500 MB)</li>
+      <li>Choisissez une duree d'expiration (1h pour un envoi rapide, 24h pour laisser le temps)</li>
+      <li>Ajoutez un mot de passe si le contenu est confidentiel</li>
+      <li>Copiez le lien et collez-le dans votre email, SMS, ou message</li>
+      <li>Le destinataire clique et telecharge — sans creer de compte</li>
+    </ol>
+
+    <h3 style="font-size:.95rem;font-weight:600;color:#b0b0b0;margin:1.5rem 0 .6rem">Partager du code ou du texte — alternative a Pastebin</h3>
+    <p style="font-size:.8rem;color:#555;line-height:1.7;margin-bottom:1rem">L'onglet "Texte" transforme FileDrop en Pastebin temporaire. Collez un snippet de code, un log d'erreur, une config, un mot de passe WiFi, ou des notes. Contrairement a Pastebin, le contenu est automatiquement supprime apres expiration. Rien ne reste indexe indefiniment sur internet. Vous pouvez aussi proteger le paste par mot de passe.</p>
+
+    <h3 style="font-size:.95rem;font-weight:600;color:#b0b0b0;margin:1.5rem 0 .6rem">Confidentialite et securite</h3>
+    <p style="font-size:.8rem;color:#555;line-height:1.7;margin-bottom:1rem">FileDrop est heberge sur un serveur prive en France. Aucun cookie ni outil d'analyse tiers n'est utilise. Les fichiers volumineux sont envoyes par morceaux de 5 MB, puis assembles en flux. Chaque nouveau lien utilise un identifiant aleatoire de 128 bits. Les fichiers sont supprimes du disque apres expiration, sans sauvegarde applicative.</p>
+
+    <div style="margin-top:1.5rem">
+      <h2 style="font-size:1.1rem;font-weight:600;color:#ccc;margin-bottom:.8rem">Questions frequentes</h2>
+      <details style="margin-bottom:.6rem;border:1px solid #1e1e1e;border-radius:8px"><summary style="padding:.7rem 1rem;font-size:.8rem;font-weight:600;color:#aaa;cursor:pointer;list-style:none">Quelle est la taille maximale des fichiers ?</summary><p style="padding:0 1rem .7rem;font-size:.8rem;color:#555;line-height:1.6">500 MB par fichier. L'upload se fait par morceaux de 5 MB (chunked upload), ce qui permet de passer a travers les limites des CDN comme Cloudflare et garantit un upload fiable meme avec une connexion instable. Si votre fichier depasse 500 MB, compressez-le en ZIP ou RAR avant l'envoi.</p></details>
+      <details style="margin-bottom:.6rem;border:1px solid #1e1e1e;border-radius:8px"><summary style="padding:.7rem 1rem;font-size:.8rem;font-weight:600;color:#aaa;cursor:pointer;list-style:none">Combien de temps les fichiers sont-ils conserves ?</summary><p style="padding:0 1rem .7rem;font-size:.8rem;color:#555;line-height:1.6">Vous choisissez la duree : 15 minutes, 30 minutes, 1 heure, 3 heures, 6 heures, 12 heures, ou 24 heures. Apres ce delai, le fichier est retire du stockage applicatif et n'est plus accessible via le lien.</p></details>
+      <details style="margin-bottom:.6rem;border:1px solid #1e1e1e;border-radius:8px"><summary style="padding:.7rem 1rem;font-size:.8rem;font-weight:600;color:#aaa;cursor:pointer;list-style:none">Pourquoi utiliser FileDrop ?</summary><p style="padding:0 1rem .7rem;font-size:.8rem;color:#555;line-height:1.6">Pour partager ponctuellement un fichier ou un texte sans creer de compte, avec une expiration courte et un mot de passe optionnel.</p></details>
+      <details style="margin-bottom:.6rem;border:1px solid #1e1e1e;border-radius:8px"><summary style="padding:.7rem 1rem;font-size:.8rem;font-weight:600;color:#aaa;cursor:pointer;list-style:none">Le destinataire doit-il creer un compte ?</summary><p style="padding:0 1rem .7rem;font-size:.8rem;color:#555;line-height:1.6">Non. Le destinataire clique sur le lien et telecharge directement. Aucun compte, aucune application a installer, aucune publicite a regarder.</p></details>
+      <details style="margin-bottom:.6rem;border:1px solid #1e1e1e;border-radius:8px"><summary style="padding:.7rem 1rem;font-size:.8rem;font-weight:600;color:#aaa;cursor:pointer;list-style:none">Mes fichiers sont-ils securises ?</summary><p style="padding:0 1rem .7rem;font-size:.8rem;color:#555;line-height:1.6">Le transfert utilise HTTPS (chiffrement en transit via Cloudflare). Vous pouvez ajouter un mot de passe pour proteger l'acces au fichier. Pour les contenus tres sensibles, nous recommandons de chiffrer le fichier avant l'upload (avec 7-Zip ou VeraCrypt par exemple).</p></details>
+      <details style="margin-bottom:.6rem;border:1px solid #1e1e1e;border-radius:8px"><summary style="padding:.7rem 1rem;font-size:.8rem;font-weight:600;color:#aaa;cursor:pointer;list-style:none">Comment signaler un fichier illicite ?</summary><p style="padding:0 1rem .7rem;font-size:.8rem;color:#555;line-height:1.6">Chaque page de telechargement contient un bouton "Signaler ce fichier". Le signalement est journalise et declenche la suppression automatique du contenu encore present.</p></details>
+    </div>
+    <p style="font-size:.7rem;color:#333;margin-top:1.5rem;text-align:center">FileDrop est open source. <a href="https://github.com/Purvanas/file-drop" style="color:#444;text-decoration:none">Code source sur GitHub</a></p>
+  </div>
+
+<script>
+(function() {
+  // Detect page type
+  const dlMatch = location.pathname.match(/^\/d\/([a-f0-9]+)$/);
+  const pasteMatch = location.pathname.match(/^\/p\/([a-f0-9]+)$/);
+
+  if (dlMatch) {
+    initDownload(dlMatch[1]);
+  } else if (pasteMatch) {
+    initPasteView(pasteMatch[1]);
+  } else {
+    initUpload();
+  }
+
+  // ===== UPLOAD =====
+  function initUpload() {
+    const uploadView = document.getElementById('upload-view');
+    const resultView = document.getElementById('result-view');
+    const dropzone = document.getElementById('dropzone');
+    const fileInput = document.getElementById('file-input');
+    const fileInfo = document.getElementById('file-info');
+    const uploadBtn = document.getElementById('upload-btn');
+    const progressWrap = document.getElementById('progress-wrap');
+    const progressFill = document.getElementById('progress-fill');
+    const progressText = document.getElementById('progress-text');
+    const pasteArea = document.getElementById('paste-area');
+    const pasteCount = document.getElementById('paste-count');
+
+    let selectedFile = null;
+    let mode = 'file';
+
+    // Mode toggle
+    document.querySelectorAll('.mode-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        mode = btn.dataset.mode;
+        document.getElementById('file-mode').style.display = mode === 'file' ? '' : 'none';
+        document.getElementById('paste-mode').style.display = mode === 'paste' ? '' : 'none';
+        // Update button state
+        if (mode === 'paste') {
+          uploadBtn.disabled = !pasteArea.value.trim();
+          uploadBtn.textContent = 'Partager';
+        } else {
+          uploadBtn.disabled = !selectedFile;
+          uploadBtn.textContent = 'Envoyer';
+        }
+      });
+    });
+
+    // Paste counter
+    pasteArea.addEventListener('input', () => {
+      const size = new Blob([pasteArea.value]).size;
+      pasteCount.textContent = size < 1024 ? size + ' B' : (size / 1024).toFixed(1) + ' KB';
+      pasteCount.parentElement.className = 'paste-counter' + (size > 500 * 1024 ? ' over' : '');
+      uploadBtn.disabled = !pasteArea.value.trim();
+    });
+
+    // Tab key in textarea
+    pasteArea.addEventListener('keydown', e => {
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        const start = pasteArea.selectionStart;
+        pasteArea.value = pasteArea.value.substring(0, start) + '  ' + pasteArea.value.substring(pasteArea.selectionEnd);
+        pasteArea.selectionStart = pasteArea.selectionEnd = start + 2;
+      }
+    });
+
+    // File drag & drop
+    dropzone.addEventListener('click', () => fileInput.click());
+    dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('dragover'); });
+    dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+    dropzone.addEventListener('drop', e => {
+      e.preventDefault();
+      dropzone.classList.remove('dragover');
+      if (e.dataTransfer.files.length) selectFile(e.dataTransfer.files[0]);
+    });
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files.length) selectFile(fileInput.files[0]);
+    });
+
+    function selectFile(file) {
+      selectedFile = file;
+      document.getElementById('file-name').textContent = file.name;
+      document.getElementById('file-size').textContent = humanSize(file.size);
+      fileInfo.classList.add('visible');
+      dropzone.classList.add('has-file');
+      dropzone.querySelector('.dropzone-icon').textContent = '';
+      dropzone.querySelector('.dropzone-text').innerHTML = '<span>Changer de fichier</span>';
+      uploadBtn.disabled = false;
+    }
+
+uploadBtn.addEventListener('click', () => {
+      if (mode === 'paste') return doPaste();
+      if (!selectedFile) return;
+      doChunkedUpload(selectedFile);
+    });
+
+    async function doChunkedUpload(file) {
+      uploadBtn.disabled = true;
+      progressWrap.classList.add('visible');
+      progressText.textContent = 'Initialisation...';
+
+      const ttl = document.getElementById('ttl').value;
+      const pw = document.getElementById('password').value;
+
+      try {
+        // 1. Init chunked upload session
+        const initRes = await fetch('/api/upload/init', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: file.name, size: file.size, ttl, password: pw || undefined }),
+        });
+        if (!initRes.ok) { const e = await initRes.json(); throw new Error(e.error); }
+        const { uploadId, chunkSize } = await initRes.json();
+
+        // 2. Upload chunks sequentially
+        const totalChunks = Math.ceil(file.size / chunkSize);
+        let uploaded = 0;
+
+        for (let i = 0; i < totalChunks; i++) {
+          const start = i * chunkSize;
+          const end = Math.min(start + chunkSize, file.size);
+          const chunk = file.slice(start, end);
+
+          const fd = new FormData();
+          fd.append('chunk', chunk, 'chunk');
+
+          let lastError;
+          for (let attempt = 1; attempt <= 3; attempt++) {
+            try {
+              await new Promise((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', '/api/upload/chunk/' + uploadId);
+                xhr.setRequestHeader('X-Chunk-Index', String(i));
+                xhr.timeout = 90_000;
+                xhr.upload.onprogress = e => {
+                  if (e.lengthComputable) {
+                    const totalSent = uploaded + e.loaded;
+                    const pct = Math.round((totalSent / file.size) * 100);
+                    progressFill.style.width = pct + '%';
+                    progressText.textContent = pct + '% \u00b7 ' + humanSize(totalSent) + ' / ' + humanSize(file.size) + ' (morceau ' + (i+1) + '/' + totalChunks + ')';
+                  }
+                };
+                xhr.onload = () => {
+                  if (xhr.status === 200) return resolve();
+                  let message = 'Morceau ' + (i+1) + '/' + totalChunks + ' refuse';
+                  try { message = JSON.parse(xhr.responseText).error || message; } catch {}
+                  reject(new Error(message));
+                };
+                xhr.onerror = () => reject(new Error('Connexion interrompue'));
+                xhr.ontimeout = () => reject(new Error('Delai de transfert depasse'));
+                xhr.send(fd);
+              });
+              lastError = null;
+              break;
+            } catch (error) {
+              lastError = error;
+              if (attempt < 3) {
+                progressText.textContent = 'Reprise du morceau ' + (i+1) + ' (' + (attempt + 1) + '/3)...';
+                await new Promise(resolve => setTimeout(resolve, attempt * 750));
+              }
+            }
+          }
+          if (lastError) throw lastError;
+
+          uploaded += (end - start);
+        }
+
+        // 3. Complete upload
+        progressText.textContent = 'Finalisation...';
+        const doneRes = await fetch('/api/upload/complete/' + uploadId, { method: 'POST' });
+        if (!doneRes.ok) { const e = await doneRes.json(); throw new Error(e.error); }
+        const data = await doneRes.json();
+
+        progressFill.style.width = '100%';
+        showResult(data);
+      } catch (e) {
+        progressText.textContent = 'Erreur: ' + e.message;
+        uploadBtn.disabled = false;
+      }
+    }
+
+
+    async function doPaste() {
+      const content = pasteArea.value;
+      if (!content.trim()) return;
+
+      uploadBtn.disabled = true;
+      try {
+        const resp = await fetch('/api/paste', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            content,
+            ttl: document.getElementById('ttl').value,
+            password: document.getElementById('password').value || undefined,
+          }),
+        });
+        if (!resp.ok) {
+          const err = await resp.json();
+          alert(err.error || 'Erreur');
+          uploadBtn.disabled = false;
+          return;
+        }
+        const data = await resp.json();
+        showResult(data);
+      } catch {
+        uploadBtn.disabled = false;
+      }
+    }
+
+    function showResult(data) {
+      uploadView.style.display = 'none';
+      document.getElementById('privacy-footer').style.display = 'none';
+      resultView.classList.add('visible');
+
+      const fullUrl = location.origin + data.url;
+      document.getElementById('result-link').value = fullUrl;
+      document.getElementById('result-name').textContent = data.name || 'Texte';
+      document.getElementById('result-size').textContent = data.size;
+
+      const expires = new Date(data.expiresAt);
+      const diff = expires - Date.now();
+      const mins = Math.round(diff / 60000);
+      let expText = mins < 60
+        ? `Expire dans ${mins} min`
+        : `Expire dans ${Math.floor(mins/60)}h${String(mins%60).padStart(2,'0')}`;
+      document.getElementById('result-expires').textContent = expText;
+      document.getElementById('result-password').textContent = data.hasPassword
+        ? 'Protege par mot de passe'
+        : '';
+
+      document.getElementById('copy-btn').addEventListener('click', () => {
+        navigator.clipboard.writeText(fullUrl).then(() => {
+          document.getElementById('copy-btn').textContent = 'Copie !';
+          setTimeout(() => document.getElementById('copy-btn').textContent = 'Copier', 2000);
+        });
+      });
+
+      document.getElementById('new-upload').addEventListener('click', () => location.reload());
+    }
+  }
+
+  // ===== DOWNLOAD =====
+  function initDownload(id) {
+    document.getElementById('upload-view').style.display = 'none';
+    document.getElementById('privacy-footer').style.display = 'none';
+    const dlView = document.getElementById('download-view');
+    dlView.classList.add('visible');
+
+    fetch('/api/file/' + id)
+      .then(r => {
+        if (!r.ok) throw new Error('not found');
+        return r.json();
+      })
+      .then(data => {
+        document.getElementById('dl-name').textContent = data.name;
+        document.getElementById('dl-size').textContent = data.size;
+
+        const expires = new Date(data.expiresAt);
+        const diff = expires - Date.now();
+        const mins = Math.round(diff / 60000);
+        document.getElementById('dl-expires').textContent = mins < 60
+          ? `Expire dans ${mins} min`
+          : `Expire dans ${Math.floor(mins/60)}h${String(mins%60).padStart(2,'0')}`;
+
+        if (data.hasPassword) {
+          document.getElementById('dl-password-wrap').style.display = '';
+        }
+
+        document.getElementById('dl-btn').addEventListener('click', () => {
+          const pw = document.getElementById('dl-password').value;
+          downloadFile(id, pw);
+        });
+      })
+      .catch(() => {
+        dlView.innerHTML = '<h2 style="color:#ef5350">Fichier expiré ou introuvable</h2><br><a href="/" style="color:#6ea8fe">Envoyer un fichier</a>';
+      });
+  }
+
+  function downloadFile(id, password) {
+    const btn = document.getElementById('dl-btn');
+    const dlError = document.getElementById('dl-error');
+    dlError.style.display = 'none';
+    btn.classList.add('loading');
+    btn.textContent = 'Préparation...';
+
+    fetch('/api/download-token/' + id, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password }),
+    })
+      .then(r => {
+        if (r.status === 403) {
+          dlError.style.display = 'block';
+          btn.classList.remove('loading');
+          btn.textContent = 'Télécharger';
+          throw new Error('wrong password');
+        }
+        if (!r.ok) return r.json().then(data => { throw new Error(data.error || 'Préparation impossible'); });
+        return r.json();
+      })
+      .then(data => {
+        // Redirect to GET endpoint — browser handles download natively
+        window.location.href = '/api/download-get/' + id + '?token=' + data.token;
+        // Reset button after a short delay
+        setTimeout(() => {
+          btn.classList.remove('loading');
+          btn.textContent = 'Télécharger';
+        }, 2000);
+      })
+      .catch(error => {
+        if (error.message !== 'wrong password') {
+          dlError.textContent = error.message;
+          dlError.style.display = 'block';
+        }
+        btn.classList.remove('loading');
+        btn.textContent = 'Télécharger';
+      });
+  }
+
+  // ===== PASTE VIEW =====
+  function initPasteView(id) {
+    document.getElementById('upload-view').style.display = 'none';
+    document.getElementById('privacy-footer').style.display = 'none';
+    const pv = document.getElementById('paste-view');
+    pv.classList.add('visible');
+
+    fetch('/api/paste/' + id)
+      .then(r => {
+        if (!r.ok) throw new Error('not found');
+        return r.json();
+      })
+      .then(data => {
+        document.getElementById('pv-size').textContent = data.size;
+        const expires = new Date(data.expiresAt);
+        const diff = expires - Date.now();
+        const mins = Math.round(diff / 60000);
+        document.getElementById('pv-expires').textContent = mins < 60
+          ? `Expire dans ${mins} min`
+          : `Expire dans ${Math.floor(mins/60)}h${String(mins%60).padStart(2,'0')}`;
+
+        if (data.hasPassword) {
+          document.getElementById('pv-password-wrap').style.display = '';
+          document.getElementById('pv-actions').style.display = 'none';
+          document.getElementById('pv-unlock').addEventListener('click', () => {
+            const pw = document.getElementById('pv-password').value;
+            fetch('/api/paste/' + id, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ password: pw }),
+            })
+              .then(r => {
+                if (r.status === 403) { document.getElementById('pv-error').textContent = 'Mot de passe incorrect'; document.getElementById('pv-error').style.display = 'block'; throw new Error('wrong pw'); }
+                if (!r.ok) return r.json().then(data => { throw new Error(data.error || 'Déverrouillage impossible'); });
+                return r.json();
+              })
+              .then(d => showPasteContent(d.content))
+              .catch(error => {
+                if (error.message !== 'wrong pw') {
+                  document.getElementById('pv-error').textContent = error.message;
+                  document.getElementById('pv-error').style.display = 'block';
+                }
+              });
+          });
+        } else {
+          showPasteContent(data.content);
+        }
+      })
+      .catch(() => {
+        pv.innerHTML = '<h2 style="color:#ef5350">Paste expire ou introuvable</h2><br><a href="/" style="color:#6ea8fe">Retour</a>';
+      });
+
+    function showPasteContent(content) {
+      document.getElementById('pv-password-wrap').style.display = 'none';
+      document.getElementById('pv-content-wrap').style.display = '';
+      document.getElementById('pv-actions').style.display = '';
+      document.getElementById('pv-content').textContent = content;
+
+      document.getElementById('pv-copy').addEventListener('click', () => {
+        navigator.clipboard.writeText(content).then(() => {
+          document.getElementById('pv-copy').textContent = 'Copie !';
+          setTimeout(() => document.getElementById('pv-copy').textContent = 'Copier', 2000);
+        });
+      });
+
+      document.getElementById('pv-raw').addEventListener('click', () => {
+        const blob = new Blob([content], { type: 'text/plain' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'paste.txt';
+        a.click();
+        URL.revokeObjectURL(a.href);
+      });
+    }
+  }
+
+  // ===== REPORT =====
+  window.showReportForm = function() {
+    const rf = document.getElementById('report-form');
+    const prf = document.getElementById('paste-report-form');
+    if (rf) rf.classList.add('visible');
+    if (prf) prf.classList.add('visible');
+    document.querySelectorAll('.btn-report').forEach(b => b.style.display = 'none');
+  };
+
+  window.submitReport = function() {
+    const fileMatch = location.pathname.match(/^\/d\/([a-f0-9]+)$/);
+    if (!fileMatch) return;
+    fetch('/api/report/' + fileMatch[1], {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason: document.getElementById('report-reason').value }),
+    })
+      .then(async r => { const data = await r.json(); if (!r.ok) throw new Error(data.error || 'Suppression impossible'); return data; })
+      .then(() => {
+        document.getElementById('report-form').innerHTML = '<div style="color:#4caf50;margin-top:8px;">Fichier supprime. Merci pour le signalement.</div>';
+        document.getElementById('dl-btn').disabled = true;
+        document.getElementById('dl-btn').style.opacity = '0.3';
+      })
+      .catch(error => {
+        document.getElementById('report-form').insertAdjacentHTML('beforeend', '<div style="color:#ef5350;margin-top:8px;"></div>');
+        document.getElementById('report-form').lastElementChild.textContent = error.message;
+      });
+  };
+
+  window.submitPasteReport = function() {
+    const pasteMatch = location.pathname.match(/^\/p\/([a-f0-9]+)$/);
+    if (!pasteMatch) return;
+    fetch('/api/report/' + pasteMatch[1], {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason: document.getElementById('paste-report-reason').value }),
+    })
+      .then(async r => { const data = await r.json(); if (!r.ok) throw new Error(data.error || 'Suppression impossible'); return data; })
+      .then(() => {
+        document.getElementById('paste-report-form').innerHTML = '<div style="color:#4caf50;margin-top:8px;">Contenu supprime. Merci pour le signalement.</div>';
+        document.getElementById('pv-content-wrap').style.display = 'none';
+        document.getElementById('pv-actions').style.display = 'none';
+      })
+      .catch(error => {
+        document.getElementById('paste-report-form').insertAdjacentHTML('beforeend', '<div style="color:#ef5350;margin-top:8px;"></div>');
+        document.getElementById('paste-report-form').lastElementChild.textContent = error.message;
+      });
+  };
+
+  window.showLegal = function() {
+    document.getElementById('legal-modal').classList.add('visible');
+  };
+
+  function humanSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    return (bytes / (1024 * 1024 * 1024)).toFixed(2) + ' GB';
+  }
+})();
+</script>
+<div style="position:fixed;bottom:12px;right:12px;z-index:9999">
+  <a href="https://ko-fi.com/purvanas" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;background:#ff5e5b;color:#fff;border-radius:10px;font-size:13px;font-weight:600;text-decoration:none;box-shadow:0 2px 8px rgba(0,0,0,.3);font-family:-apple-system,sans-serif">&#9749; Soutenir</a>
+</div>
+<div id="bug-report" style="position:fixed;bottom:12px;left:12px;z-index:9998">
+  <button onclick="var f=document.getElementById('bug-form');f.style.display=f.style.display==='block'?'none':'block'" style="padding:6px 12px;background:#1e1e1e;border:1px solid #333;border-radius:8px;color:#666;font-size:12px;cursor:pointer;font-family:-apple-system,sans-serif">&#128027; Bug ?</button>
+  <div id="bug-form" style="display:none;position:absolute;bottom:40px;left:0;background:#1e1e1e;border:1px solid #333;border-radius:10px;padding:12px;width:260px">
+    <textarea id="bug-desc" placeholder="Decrivez le probleme..." style="width:100%;height:60px;background:#0a0a0a;border:1px solid #333;border-radius:6px;color:#ccc;padding:8px;font-size:12px;resize:none;font-family:-apple-system,sans-serif;margin-bottom:8px"></textarea>
+    <button onclick="fetch('/api/report-bug',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({error:document.getElementById('bug-desc').value,page:location.pathname,userAgent:navigator.userAgent})}).then(function(){document.getElementById('bug-form').innerHTML='<p style=color:#4caf50;font-size:12px;text-align:center>Merci !</p>'})" style="width:100%;padding:6px;background:#7c4dff;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:-apple-system,sans-serif">Envoyer</button>
+  </div>
+</div>
+</body>
+<script src="/i18n.js"></script>
+<script src="/en.js"></script>
+</html>
